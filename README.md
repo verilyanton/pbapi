@@ -1,2 +1,6 @@
-# pbapi
-Plant-Based API
+# Plant-Based API
+
+## Run locally
+```shell
+uvicorn src.main:app --reload
+```
