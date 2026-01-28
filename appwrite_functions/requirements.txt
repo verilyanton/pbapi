@@ -1,2 +1,4 @@
 appwrite
 fastapi
+psycopg2-binary
+doppler-sdk
