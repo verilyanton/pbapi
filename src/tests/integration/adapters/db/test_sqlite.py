@@ -1,13 +1,13 @@
-import unittest
 from datetime import datetime
+from unittest import TestCase
 
 from src.adapters.db.sqlite import SQLiteDBAdapter
-from src.schemas.product import Product
 from src.schemas.common import EnvType
+from src.schemas.product import Product
 from src.tests.integration import TEST_SQLITE_DB_PATH
 
 
-class TestSQLiteDBAdapter(unittest.TestCase):
+class TestSQLiteDBAdapter(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.adapter = SQLiteDBAdapter(EnvType.TEST, None, TEST_SQLITE_DB_PATH)

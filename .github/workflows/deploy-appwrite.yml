@@ -22,6 +22,7 @@ jobs:
         run: |
           echo "Copying src directory to appwrite_functions..."
           cp -r src appwrite_functions/
+          rm -r appwrite_functions/src/tests
           # Ensure main.py is at the root of appwrite_functions
           if [ -f appwrite_functions/main.py ]; then echo "main.py found"; else echo "main.py missing"; exit 1; fi
 
