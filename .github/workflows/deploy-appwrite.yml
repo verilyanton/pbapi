@@ -18,6 +18,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Export requirements.txt
+        run: |
+            uv export --format requirements-txt --no-dev --output-file appwrite_functions/requirements.txt
+
       - name: Prepare Build Context
         run: |
           echo "Copying src directory to appwrite_functions..."
