@@ -1,0 +1,13 @@
+version: "2"
+plugins:
+  duplication:
+    enabled: true
+    config:
+      languages:
+        python:
+          python_version: 3
+exclude_patterns:
+- "src/tests/"
+- "cdk/"
+- "*.ts"
+- "node_modules/"

@@ -1,0 +1,39 @@
+name: Deploy Appwrite Function
+
+on:
+  # Allows manual deployment from the GitHub Actions tab
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'appwrite_functions/**'
+      - '.github/workflows/deploy-appwrite.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare Build Context
+        run: |
+          echo "Copying src directory to appwrite_functions..."
+          cp -r src appwrite_functions/
+          # Ensure main.py is at the root of appwrite_functions
+          if [ -f appwrite_functions/main.py ]; then echo "main.py found"; else echo "main.py missing"; exit 1; fi
+
+      - name: Install Appwrite CLI
+        run: |
+          curl -sL https://appwrite.io/cli/install.sh | bash
+          appwrite -v
+
+      - name: Configure Appwrite CLI
+        run: |
+          appwrite client --endpoint ${{ secrets.APPWRITE_ENDPOINT }} --project-id ${{ secrets.APPWRITE_PROJECT_ID }} --key ${{ secrets.APPWRITE_API_KEY }}
+
+      - name: Deploy Function
+        run: |
+          appwrite push functions --all --force
