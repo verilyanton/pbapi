@@ -10,7 +10,7 @@ dependencies = [
     "sqlalchemy",
     "pydantic[email]",
     "python-dotenv",
-    "psycopg2>=2.9.11",
+    "psycopg2-binary>=2.9.11",
     "fastapi>=0.128.0",
 ]
 
