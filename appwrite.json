@@ -20,7 +20,12 @@
             "logging": true,
             "entrypoint": "src/adapters/rest/appwrite_functions.py",
             "commands": "pip install -r requirements.txt",
-            "path": "appwrite_functions"
+            "path": "",
+            "variables": {
+                "DOPPLER_CONFIG": "${{ secrets.DOPPLER_CONFIG || 'prod' }}",
+                "DOPPLER_PROJECT": "${{ secrets.DOPPLER_PROJECT || 'pbapi' }}",
+                "PBAPI_DOPPLER_PROD_TOKEN": "${{ secrets.PBAPI_DOPPLER_PROD_TOKEN }}"
+            }
         }
     ]
 }
