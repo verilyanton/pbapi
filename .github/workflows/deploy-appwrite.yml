@@ -36,3 +36,7 @@ jobs:
       - name: Deploy Function
         run: |
           appwrite push functions --all --force
+        env:
+          DOPPLER_CONFIG: ${{ secrets.DOPPLER_CONFIG || 'prod' }}
+          DOPPLER_PROJECT: ${{ secrets.DOPPLER_PROJECT || 'pbapi' }}
+          PBAPI_DOPPLER_PROD_TOKEN: ${{ secrets.PBAPI_DOPPLER_PROD_TOKEN }}

@@ -21,7 +21,7 @@ def load_doppler_secrets():
     if not project:
         raise EnvironmentError("DOPPLER_PROJECT_NAME is not set")
 
-    config = os.environ.get("ENV_NAME", os.environ.get("DOPPLER_ENVIRONMENT"))
+    config = os.environ.get("DOPPLER_ENVIRONMENT", os.environ.get("ENV_NAME"))
     if not config:
         raise EnvironmentError("DOPPLER_ENVIRONMENT is not set")
 
