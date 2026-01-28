@@ -17,5 +17,5 @@ from src.adapters.rest.appwrite_fastapi_adapter import run_fastapi_on_appwrite
 load_doppler_secrets()
 
 
-def main(context):
-    return run_fastapi_on_appwrite(app, context)
+async def main(context):
+    return await run_fastapi_on_appwrite(app, context)

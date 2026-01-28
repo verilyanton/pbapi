@@ -76,6 +76,6 @@ class AppwriteFastAPIAdapter:
         )
 
 
-def run_fastapi_on_appwrite(app: FastAPI, context):
+async def run_fastapi_on_appwrite(app: FastAPI, context):
     adapter = AppwriteFastAPIAdapter(app)
-    return asyncio.run(adapter.handle(context))
+    return await adapter.handle(context)
