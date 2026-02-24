@@ -83,11 +83,12 @@ async def get_receipt_by_url(
     logger.info(f"Receipt URL: {request.url}")
     handler = SfsMdReceiptHandler(logger)
     receipt = handler.get_by_url(request.url)
-    if not receipt:
-        raise HTTPException(status_code=404, detail="Receipt not found")
+    msg = "Receipt retrieved successfully" if receipt else "Receipt not found"
+    logger.info(msg)
+
     return ApiResponse(
         status_code=status.HTTP_200_OK,
-        detail="Receipt retrieved successfully",
+        detail=msg,
         data=receipt,
     )
 

@@ -1,3 +1,5 @@
+import urllib.parse
+
 from fastapi import FastAPI
 
 
@@ -13,6 +15,21 @@ class AppwriteFastAPIAdapter:
                 (key.lower().encode("latin-1"), str(value).encode("latin-1"))
             )
 
+        query_string = b""
+        if hasattr(context.req, "url") and "?" in context.req.url:
+            query_string = context.req.url.split("?", 1)[1].encode("latin-1")
+
+        if not query_string:
+            query_params = getattr(context.req, "query", None)
+            if isinstance(query_params, (bytes, bytearray)):
+                query_string = bytes(query_params)
+            elif isinstance(query_params, str):
+                query_string = query_params.lstrip("?").encode("utf-8")
+            elif isinstance(query_params, (dict, list, tuple)):
+                query_string = urllib.parse.urlencode(query_params, doseq=True).encode(
+                    "ascii"
+                )
+
         scope = {
             "type": "http",
             "asgi": {"version": "3.0", "spec_version": "2.0"},
@@ -20,11 +37,7 @@ class AppwriteFastAPIAdapter:
             "method": context.req.method,
             "scheme": "https",
             "path": context.req.path,
-            "query_string": (
-                context.req.query_string.encode("latin-1")
-                if hasattr(context.req, "query_string")
-                else b""
-            ),
+            "query_string": query_string,
             "headers": headers,
             "appwrite_context": context,
         }

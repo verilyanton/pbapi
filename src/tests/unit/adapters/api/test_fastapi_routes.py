@@ -72,9 +72,7 @@ class TestUserRoutes:
         )
         expected_user = {"id": "user_1"}
 
-        with patch(
-            "src.adapters.api.fastapi_routes.UserIdentityHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.UserIdentityHandler") as mock_handler:
             mock_handler.return_value.get_or_create_user_by_identity.return_value = (
                 expected_user
             )
@@ -105,9 +103,7 @@ class TestUserRoutes:
             name="Google User",
         )
 
-        with patch(
-            "src.adapters.api.fastapi_routes.UserIdentityHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.UserIdentityHandler") as mock_handler:
             mock_handler.return_value.get_or_create_user_by_identity.return_value = {
                 "id": "user_2"
             }
@@ -130,9 +126,7 @@ class TestReceiptRoutes:
         request = make_receipt()
         expected_receipt = {"id": "receipt_1"}
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = expected_receipt
 
             result = run_async(
@@ -162,9 +156,7 @@ class TestReceiptRoutes:
             ),
         ]
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = receipt
 
             result = run_async(
@@ -180,52 +172,48 @@ class TestReceiptRoutes:
         receipt = make_receipt()
         url = "https://example.com/receipt/42"
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_url.return_value = receipt
 
             from src.schemas.request_schemas import GetReceiptByUrlRequest
 
             request = GetReceiptByUrlRequest(url=url)
-            result = run_async(
-                fastapi_routes.get_receipt_by_url(request, logger=logger)
-            )
+            result = run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
 
         assert isinstance(result, ApiResponse)
         assert result.status_code == status.HTTP_200_OK
         assert result.detail == "Receipt retrieved successfully"
         assert result.data == receipt
-        logger.info.assert_called_with(f"Receipt URL: {url}")
+        logger.info.assert_called_with(result.detail)
         mock_handler.return_value.get_by_url.assert_called_once_with(url)
 
     def test_get_receipt_by_url_not_found(self):
         logger = Mock()
         url = "https://example.com/nonexistent/receipt"
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_url.return_value = None
 
             from src.schemas.request_schemas import GetReceiptByUrlRequest
 
             request = GetReceiptByUrlRequest(url=url)
+            result = run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
 
-            with pytest.raises(HTTPException) as exc_info:
-                run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
+        assert isinstance(result, ApiResponse)
+        assert result.status_code == status.HTTP_200_OK
+        assert result.detail == "Receipt not found"
+        assert result.data is None
 
-            assert exc_info.value.status_code == 404
-            assert exc_info.value.detail == "Receipt not found"
+        # Verify logging was called with the URL
+        logger.info.assert_any_call(f"Receipt URL: {url}")
+        logger.info.assert_any_call("Receipt not found")
         mock_handler.return_value.get_by_url.assert_called_once_with(url)
 
     def test_get_receipt_by_url_with_special_characters(self):
         logger = Mock()
         url = "https://example.com/receipt/42?param=value&other=test#anchor"
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             receipt = make_receipt()
             receipt.receipt_url = url
             mock_handler.return_value.get_by_url.return_value = receipt
@@ -233,9 +221,7 @@ class TestReceiptRoutes:
             from src.schemas.request_schemas import GetReceiptByUrlRequest
 
             request = GetReceiptByUrlRequest(url=url)
-            result = run_async(
-                fastapi_routes.get_receipt_by_url(request, logger=logger)
-            )
+            result = run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
 
         assert result.data.receipt_url == url
         mock_handler.return_value.get_by_url.assert_called_once_with(url)
@@ -244,9 +230,7 @@ class TestReceiptRoutes:
         logger = Mock()
         request = make_receipt()
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = request
 
             run_async(fastapi_routes.get_or_create_receipt(request, logger=logger))
@@ -257,19 +241,21 @@ class TestReceiptRoutes:
     def test_get_receipt_by_url_empty_url_string(self):
         logger = Mock()
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_url.return_value = None
 
             from src.schemas.request_schemas import GetReceiptByUrlRequest
 
             request = GetReceiptByUrlRequest(url="")
+            result = run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
 
-            with pytest.raises(HTTPException) as exc_info:
-                run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
+        assert isinstance(result, ApiResponse)
+        assert result.status_code == status.HTTP_200_OK
+        assert result.detail == "Receipt not found"
+        assert result.data is None
 
-            assert exc_info.value.status_code == 404
+        logger.info.assert_any_call("Receipt URL: ")
+        logger.info.assert_any_call("Receipt not found")
         mock_handler.return_value.get_by_url.assert_called_once_with("")
 
     def test_get_or_create_receipt_preserves_all_fields(self):
@@ -277,9 +263,7 @@ class TestReceiptRoutes:
         request = make_receipt()
         request.shop_id = UUID("87654321-4321-8765-4321-876543210987")
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = request
 
             result = run_async(
@@ -296,9 +280,7 @@ class TestReceiptRoutes:
         logger = Mock()
         long_url = "https://example.com/" + "a" * 1000 + "/receipt/42"
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             receipt = make_receipt()
             receipt.receipt_url = long_url
             mock_handler.return_value.get_by_url.return_value = receipt
@@ -306,9 +288,7 @@ class TestReceiptRoutes:
             from src.schemas.request_schemas import GetReceiptByUrlRequest
 
             request = GetReceiptByUrlRequest(url=long_url)
-            result = run_async(
-                fastapi_routes.get_receipt_by_url(request, logger=logger)
-            )
+            result = run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
 
         assert result.data.receipt_url == long_url
         mock_handler.return_value.get_by_url.assert_called_once_with(long_url)
@@ -317,9 +297,7 @@ class TestReceiptRoutes:
         logger = Mock()
         url_with_unicode = "https://example.com/receipt/42?name=тест&item=café"
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             receipt = make_receipt()
             receipt.receipt_url = url_with_unicode
             mock_handler.return_value.get_by_url.return_value = receipt
@@ -327,9 +305,7 @@ class TestReceiptRoutes:
             from src.schemas.request_schemas import GetReceiptByUrlRequest
 
             request = GetReceiptByUrlRequest(url=url_with_unicode)
-            result = run_async(
-                fastapi_routes.get_receipt_by_url(request, logger=logger)
-            )
+            result = run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
 
         assert result.data.receipt_url == url_with_unicode
 
@@ -338,9 +314,7 @@ class TestReceiptRoutes:
         receipt = make_receipt()
         receipt.total_amount = 0.0
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = receipt
 
             result = run_async(
@@ -354,9 +328,7 @@ class TestReceiptRoutes:
         receipt = make_receipt()
         receipt.total_amount = -10.50
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = receipt
 
             result = run_async(
@@ -370,9 +342,7 @@ class TestReceiptRoutes:
         receipt = make_receipt()
         receipt.total_amount = 999999.99
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = receipt
 
             result = run_async(
@@ -390,9 +360,7 @@ class TestReceiptRoutes:
             ),
         ]
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = receipt
 
             result = run_async(
@@ -415,9 +383,7 @@ class TestReceiptRoutes:
             for i in range(1, 101)  # 100 items
         ]
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = receipt
 
             result = run_async(
@@ -430,9 +396,7 @@ class TestReceiptRoutes:
         logger = Mock()
         url = "https://example.com/receipt/42"
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_url.side_effect = Exception(
                 "Database connection error"
             )
@@ -451,9 +415,7 @@ class TestReceiptRoutes:
         logger = Mock()
         receipt = make_receipt()
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.side_effect = ValueError(
                 "Invalid receipt data"
             )
@@ -470,9 +432,7 @@ class TestReceiptRoutes:
         url = "https://example.com/receipt/42"
         receipt = make_receipt()
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_instance = Mock()
             mock_handler.return_value = mock_instance
             mock_instance.get_by_url.return_value = receipt
@@ -480,9 +440,7 @@ class TestReceiptRoutes:
             from src.schemas.request_schemas import GetReceiptByUrlRequest
 
             request = GetReceiptByUrlRequest(url=url)
-            result = run_async(
-                fastapi_routes.get_receipt_by_url(request, logger=logger)
-            )
+            result = run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
 
             # Verify the handler was instantiated with logger
             mock_handler.assert_called_once_with(logger)
@@ -494,9 +452,7 @@ class TestReceiptRoutes:
         receipt = make_receipt()
         receipt.shop_id = None
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = receipt
 
             result = run_async(
@@ -510,9 +466,7 @@ class TestReceiptRoutes:
         receipt = make_receipt()
         receipt.receipt_canonical_url = None
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = receipt
 
             result = run_async(
@@ -524,37 +478,32 @@ class TestReceiptRoutes:
     def test_get_receipt_by_url_logging_called(self):
         logger = Mock()
         url = "https://example.com/receipt/42"
+        receipt = make_receipt()
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
-            mock_handler.return_value.get_by_url.return_value = None
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
+            mock_handler.return_value.get_by_url.return_value = receipt
 
             from src.schemas.request_schemas import GetReceiptByUrlRequest
 
             request = GetReceiptByUrlRequest(url=url)
+            run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
 
-            with pytest.raises(HTTPException):
-                run_async(fastapi_routes.get_receipt_by_url(request, logger=logger))
-
-        # Verify logging was called with correct message before exception
-        logger.info.assert_called_once_with(f"Receipt URL: {url}")
+        # Verify logging was called with the URL first, then with success message
+        assert logger.info.call_count == 2
+        logger.info.assert_any_call(f"Receipt URL: {url}")
+        logger.info.assert_any_call("Receipt retrieved successfully")
 
     def test_get_or_create_receipt_logging_called(self):
         logger = Mock()
         receipt = make_receipt()
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = receipt
 
             run_async(fastapi_routes.get_or_create_receipt(receipt, logger=logger))
 
         # Verify logging was called with receipt URL
-        logger.info.assert_called_once_with(
-            "Receipt URL: https://example.com/receipt/42"
-        )
+        logger.info.assert_called_once_with("Receipt URL: https://example.com/receipt/42")
 
 
 class TestHealthRoutes:
@@ -602,9 +551,7 @@ class TestReceiptRoutesGetById:
         receipt = make_receipt()
         receipt.id = receipt_id
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_id.return_value = receipt
 
             result = run_async(
@@ -623,9 +570,7 @@ class TestReceiptRoutesGetById:
         logger = Mock()
         receipt_id = "nonexistent_id"
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_id.return_value = None
 
             with pytest.raises(HTTPException) as exc_info:
@@ -643,9 +588,7 @@ class TestReceiptRoutesGetById:
         receipt.id = receipt_id
         receipt.shop_id = 42
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_id.return_value = receipt
 
             result = run_async(
@@ -659,9 +602,7 @@ class TestReceiptRoutesGetById:
         logger = Mock()
         receipt_id = "md_cr_1_42"
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_id.return_value = None
 
             with pytest.raises(HTTPException):
@@ -675,9 +616,7 @@ class TestReceiptRoutesGetById:
         receipt_id = "md_cr_1_42"
         receipt = make_receipt()
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_id.return_value = receipt
 
             run_async(fastapi_routes.get_receipt_by_id(receipt_id, logger=logger))
@@ -688,9 +627,7 @@ class TestReceiptRoutesGetById:
         """Test get_receipt_by_id with empty receipt ID."""
         logger = Mock()
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_id.return_value = None
 
             with pytest.raises(HTTPException) as exc_info:
@@ -707,9 +644,7 @@ class TestReceiptRoutesGetById:
         receipt.id = receipt_id
         receipt.shop_id = UUID("12345678-1234-5678-1234-567812345678")
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_id.return_value = receipt
 
             result = run_async(
@@ -728,9 +663,7 @@ class TestReceiptRoutesGetById:
         receipt = make_receipt()
         receipt.id = receipt_id
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_handler.return_value.get_by_id.return_value = receipt
 
             result = run_async(
@@ -752,17 +685,13 @@ class TestAddShopRoute:
         request.shop_id = shop_id
         request.receipt = receipt
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_instance = Mock()
             mock_handler.return_value = mock_instance
             mock_instance.add_shop_id.return_value = receipt
             receipt.shop_id = shop_id
 
-            result = run_async(
-                fastapi_routes.add_shop(request, logger=logger)
-            )
+            result = run_async(fastapi_routes.add_shop(request, logger=logger))
 
         assert isinstance(result, ApiResponse)
         assert result.status_code == status.HTTP_200_OK
@@ -781,9 +710,7 @@ class TestAddShopRoute:
         request.shop_id = 42
         request.receipt = receipt
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_instance = Mock()
             mock_handler.return_value = mock_instance
             mock_instance.add_shop_id.return_value = receipt
@@ -800,17 +727,13 @@ class TestAddShopRoute:
         request.shop_id = 0
         request.receipt = receipt
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_instance = Mock()
             mock_handler.return_value = mock_instance
             mock_instance.add_shop_id.return_value = receipt
             receipt.shop_id = 0
 
-            result = run_async(
-                fastapi_routes.add_shop(request, logger=logger)
-            )
+            result = run_async(fastapi_routes.add_shop(request, logger=logger))
 
         assert result.data.shop_id == 0
 
@@ -823,17 +746,13 @@ class TestAddShopRoute:
         request.shop_id = large_id
         request.receipt = receipt
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_instance = Mock()
             mock_handler.return_value = mock_instance
             mock_instance.add_shop_id.return_value = receipt
             receipt.shop_id = large_id
 
-            result = run_async(
-                fastapi_routes.add_shop(request, logger=logger)
-            )
+            result = run_async(fastapi_routes.add_shop(request, logger=logger))
 
         assert result.data.shop_id == large_id
 
@@ -847,16 +766,12 @@ class TestAddShopRoute:
         request.shop_id = 42
         request.receipt = receipt
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_instance = Mock()
             mock_handler.return_value = mock_instance
             mock_instance.add_shop_id.return_value = receipt
 
-            result = run_async(
-                fastapi_routes.add_shop(request, logger=logger)
-            )
+            result = run_async(fastapi_routes.add_shop(request, logger=logger))
 
         assert result.data.total_amount == original_total
         assert result.data.company_id == original_company
@@ -871,18 +786,14 @@ class TestAddShopRoute:
         request.shop_id = new_shop_id
         request.receipt = receipt
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_instance = Mock()
             mock_handler.return_value = mock_instance
             updated_receipt = make_receipt()
             updated_receipt.shop_id = new_shop_id
             mock_instance.add_shop_id.return_value = updated_receipt
 
-            result = run_async(
-                fastapi_routes.add_shop(request, logger=logger)
-            )
+            result = run_async(fastapi_routes.add_shop(request, logger=logger))
 
         mock_instance.add_shop_id.assert_called_once_with(
             shop_id=new_shop_id, receipt=receipt
@@ -896,9 +807,7 @@ class TestAddShopRoute:
         request.shop_id = 42
         request.receipt = receipt
 
-        with patch(
-            "src.adapters.api.fastapi_routes.SfsMdReceiptHandler"
-        ) as mock_handler:
+        with patch("src.adapters.api.fastapi_routes.SfsMdReceiptHandler") as mock_handler:
             mock_instance = Mock()
             mock_handler.return_value = mock_instance
             mock_instance.add_shop_id.side_effect = HTTPException(
@@ -939,9 +848,7 @@ class TestShopRoutes:
         with patch("src.adapters.api.fastapi_routes.ShopHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = shop
 
-            result = run_async(
-                fastapi_routes.get_or_create_shop(shop, logger=logger)
-            )
+            result = run_async(fastapi_routes.get_or_create_shop(shop, logger=logger))
 
         assert isinstance(result, ApiResponse)
         assert result.status_code == status.HTTP_200_OK
@@ -1004,9 +911,7 @@ class TestShopRoutes:
         with patch("src.adapters.api.fastapi_routes.ShopHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = shop
 
-            result = run_async(
-                fastapi_routes.get_or_create_shop(shop, logger=logger)
-            )
+            result = run_async(fastapi_routes.get_or_create_shop(shop, logger=logger))
 
         assert result.data.id == 42
 
@@ -1035,9 +940,7 @@ class TestShopRoutes:
         with patch("src.adapters.api.fastapi_routes.ShopHandler") as mock_handler:
             mock_handler.return_value.get_or_create.return_value = shop
 
-            result = run_async(
-                fastapi_routes.get_or_create_shop(shop, logger=logger)
-            )
+            result = run_async(fastapi_routes.get_or_create_shop(shop, logger=logger))
 
         assert result.data.id == shop.id
         assert result.data.company_id == shop.company_id
@@ -1103,4 +1006,3 @@ class TestShopRoutes:
                 run_async(fastapi_routes.get_or_create_shop(shop, logger=logger))
 
             assert "Invalid shop data" in str(exc_info.value)
-

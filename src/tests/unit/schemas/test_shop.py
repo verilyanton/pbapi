@@ -360,4 +360,3 @@ class TestShop(TestCase):
 
         # Same input should produce same osm_id
         assert shop1.osm_id == shop2.osm_id
-
